@@ -1,0 +1,16 @@
+{
+  "name": "bankan",
+  "version": "1.0.0",
+  "description": "Collaborative project management and Kanban backend built with Node.js, Express, and MongoDB.",
+  "license": "ISC",
+  "author": "Void",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "devel": "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "prettier": "3.9.6"
+  }
+}
