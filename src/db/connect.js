@@ -10,4 +10,9 @@ const connect = async () => {
   }
 };
 
+const isDatabaseConnected = () => {
+  return mongoose.connection.readyState === 1;
+}
+
+export { isDatabaseConnected };
 export default connect;

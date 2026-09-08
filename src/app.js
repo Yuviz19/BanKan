@@ -57,6 +57,9 @@ app.use(
 );
 
 // routes
+import heathCheckRoute from "./routes/healthcheck.route.js";
+
+app.use("/api/v1/healthCheck", heathCheckRoute);
 
 // error handling middleware
 app.use(errorHandler);
