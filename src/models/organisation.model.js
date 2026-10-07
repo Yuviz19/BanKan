@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 
-const organisationSchema = new Schema(
+const organizationSchema = new Schema(
   {
     name: {
       type: String,
@@ -22,4 +22,4 @@ const organisationSchema = new Schema(
   { timestamps: true }
 );
 
-export const Organisation = model("Organisation", organisationSchema);
+export const Organization = model("Organization", organizationSchema);

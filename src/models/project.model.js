@@ -15,9 +15,9 @@ const columnSchema = new Schema(
 
 const projectSchema = new Schema(
   {
-    organisation: {
+    organization: {
       type: Schema.Types.ObjectId,
-      ref: "Organisation",
+      ref: "Organization",
       required: true,
       index: true
     },

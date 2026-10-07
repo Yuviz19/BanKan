@@ -2,9 +2,9 @@ import { Schema, model } from "mongoose";
 
 const invitationSchema = new Schema(
   {
-    organisationId: {
+    organizationId: {
       type: Schema.Types.ObjectId,
-      ref: "Organisation",
+      ref: "Organization",
       required: true,
       index: true
     },

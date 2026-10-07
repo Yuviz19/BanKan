@@ -2,9 +2,9 @@ import { Schema, model } from "mongoose";
 
 const membershipSchema = new Schema(
   {
-    organisationId: {
+    organizationId: {
       type: Schema.Types.ObjectId,
-      ref: "Organisation",
+      ref: "Organization",
       required: true,
       index: true
     },
@@ -29,6 +29,6 @@ const membershipSchema = new Schema(
 );
 
 // one member per organisation
-membershipSchema.index({ organisationId: 1, userId: 1 }, { unique: true);
+membershipSchema.index({ organizationId: 1, userId: 1 }, { unique: true });
 
 export const Membership = model("Membership", membershipSchema);
