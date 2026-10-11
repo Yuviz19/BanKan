@@ -43,6 +43,10 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 }
 
+userSchema.statics.findByEmail = async function (email) {
+  return this.findOne({ email });
+}
+
 userSchema.methods.generateAccessToken = async function () {
   jwt.sign(
     {
