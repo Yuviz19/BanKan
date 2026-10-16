@@ -58,8 +58,10 @@ app.use(
 
 // routes
 import heathCheckRoute from "./routes/healthcheck.route.js";
+import userRouter from "./routes/user.route.js";
 
 app.use("/api/v1/healthCheck", heathCheckRoute);
+app.use("/api/v1/auth", userRouter);
 
 // error handling middleware
 app.use(errorHandler);
