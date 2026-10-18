@@ -6,6 +6,21 @@ import { ApiResponse } from "../utils/api_response.js";
 import { User } from "../models/user.model.js";
 import { supabase } from "../utils/supabase.js";
 
+const generateRefAccToken = async (id) => {
+  try {
+    const user = await User.findById({ id });
+    if (!user) {
+      throw new ApiError(401, "Unable to find user");
+    }
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(400, "Something went wrong while generating token");
+  }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -44,8 +59,6 @@ const registerUser = asyncHandler(async (req, res) => {
       );
 
     if (error) {
-      console.log("supabase error: ", error);
-      console.log("MIME:", req.file.mimetype);
       throw new ApiError(500, "Failed to uplaod avatar");
     }
 
@@ -83,4 +96,148 @@ const registerUser = asyncHandler(async (req, res) => {
     ));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    throw new ApiError(400, "Email and Password are required");
+  }
+
+  const user = await User.findByEmail({ email });
+  if (!user) {
+    throw new ApiError(400, "Unable to find the user");
+  }
+
+  const isPassValid = await User.isPasswordCorrect(password);
+  if (isPassValid) {
+    throw new ApiError(400, "Incorrect Password");
+  }
+  const { accessToken, refreshToken } = await generateRefAccToken(user._id);
+  const loggedUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  const options = {
+    httpOnly:  true,
+    secure: true,
+    sameSite: "strict"
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          loggedUser
+        },
+        "User logged-in successfully"
+      )
+    )
+});
+
+// the below are the secure routes
+
+const logoutUser = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const loggedOutUser = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      refreshToken: ""
+    },
+    {
+      new: true
+    }
+  );
+
+  if (!loggedOutUser) {
+    throw new ApiError(401, "Unable to log out the user");
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict"
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", options)
+    .cookie("refreshToken", options)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "the user has been logged out successfully"
+      )
+    );
+});
+
+const renewAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken = req.cookie?.refreshToken;
+  if (!incomingRefreshToken) {
+    throw new ApiError(400, "UnAuthorized access");
+  }
+
+  try {
+    const decodedToken = await jwt.verify(incomingRefreshToken, process.env.RT_SECRET);
+    const user = await User.findById(decodedToken._id);
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh Token");
+    }
+
+    if (incomingRefreshToken != user.refreshToken) {
+      throw new ApiError(401, "Invalid refresh token");
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = await generateRefAccToken(user._id);
+    const options = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict"
+    }
+
+    user.refreshToken = newRefreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {},
+          "access token has been renewed"
+        )
+      )
+  } catch (err) {
+    console.log("error while renewing the access token, ", err);
+    throw new ApiError(400, "Error while renewing the access token");
+  }
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(
+    req.user._id
+  ).select(
+    "-password -refreshToken"
+  );
+
+  if (!user) {
+    throw new ApiError(400, "unable to retrieve the user");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { user },
+        "user data retrieved successfully"
+      )
+    )
+});
+
+export { registerUser, loginUser, logoutUser, renewAccessToken};
