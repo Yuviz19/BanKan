@@ -23,14 +23,14 @@ const generateRefAccToken = async (id) => {
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
+  const avatarPath = req.file?.path;
+  let avatarUrl = "";
 
   const existingUser = await User.findByEmail(email);
   if (existingUser) {
+    await fs.unlink(avatarPath);
     throw new ApiError(400, "User already exists");
   }
-
-  const avatarPath = req.file?.path;
-  let avatarUrl = "";
 
   if (avatarPath) {
     const file = await fs.readFile(avatarPath);
@@ -66,15 +66,16 @@ const registerUser = asyncHandler(async (req, res) => {
       .from("avatars")
       .getPublicUrl(data.path);
 
-    const avatarUrl = urlData.publicUrl;
+    avatarUrl = urlData.publicUrl;
     await fs.unlink(avatarPath);
+    console.log("deleted");
   }
 
   const user = await User.create({
     name,
     email,
     password,
-    avatar: avatarPath
+    avatar: avatarUrl
   });
 
   const createdUser = await User.findById(user._id).select(
@@ -107,8 +108,8 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Unable to find the user");
   }
 
-  const isPassValid = await User.isPasswordCorrect(password);
-  if (isPassValid) {
+  const isPassValid = await user.isPasswordCorrect(password);
+  if (!isPassValid) {
     throw new ApiError(400, "Incorrect Password");
   }
   const { accessToken, refreshToken } = await generateRefAccToken(user._id);
@@ -240,4 +241,117 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     )
 });
 
-export { registerUser, loginUser, logoutUser, renewAccessToken};
+const updateProfile = asyncHandler(async (req, res) => {
+  const { name } = req.body;
+  const avatarPath = req.file?.path;
+
+  if (!name && !avatarPath) {
+    throw new ApiError(400, "make changes to atleast one field");
+  }
+
+  let avatarUrl = "";
+  let userData = {};
+
+  if (name) {
+    userData.name = name;
+  }
+
+  if (avatarPath) {
+    const file = await fs.readFile(avatarPath);
+    const extension = path.extname(req.file.originalname.toLowerCase());
+
+    const mimeTypes = {
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".webp": "image/webp",
+    };
+
+    const contentType = mimeTypes[extension];
+
+    if (!contentType) {
+      throw new ApiError(400, "Unsupported file type");
+    }
+
+    const { data, error } = await supabase.storage
+      .from("avatars")
+      .upload(`users/${Date.now()}-${req.file.filename}`,
+        file,
+        {
+          contentType: contentType
+        }
+      )
+
+    if (error) {
+      throw new ApiError(500, "failed to uplaod avatar");
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(data.path);
+
+    avatarUrl = urlData.publicUrl;
+    await fs.unlink(avatarPath);
+
+    userData.avatar = avatarUrl;
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    userData,
+    { new: true }
+  ).select(
+    "-password -refreshToken"
+  );
+
+  if (!updatedUser) {
+    throw new ApiError(400, "Unable to update the data");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { updatedUser },
+        "User has been updated successfully"
+      )
+    );
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const { newPassword, oldPassword } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!newPassword || !oldPassword) {
+    throw new ApiError(400, "Old and New Passwords required");
+  }
+
+  const isPassCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPassCorrect) {
+    throw new ApiError(400, "Old Password is not correct");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "User password updated successfully"
+      )
+    );
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  renewAccessToken,
+  getCurrentUser,
+  updateProfile,
+  changePassword
+};
