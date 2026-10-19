@@ -17,4 +17,33 @@ export const registrationValidator = z.object({
   avatar: z
     .string()
     .optional()
+});
+
+export const loginValidator = z.object({
+  email: z
+    .email("Please provide a valid email"),
+
+  password: z
+    .string()
+    .min(8, "Password should be atleast 8 characters long")
+    .max(20, "Password should not exceed 20 characters")
+});
+
+export const updateProfileValidator = z.object({
+  name: z
+    .string()
+    .min(2, "Name should be atleast 2 characters long")
+    .max(50, "Nmae should not exceed 50 characters")
+});
+
+export const updatePasswordValidator = z.object({
+  oldPassword: z
+    .string()
+    .min(2, "Name should be atleast 2 characters long")
+    .max(50, "Nmae should not exceed 50 characters"),
+
+  newPassword: z
+    .string()
+    .min(2, "Name should be atleast 2 characters long")
+    .max(50, "Nmae should not exceed 50 characters")
 })
