@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/api_error.js";
 import { ApiResponse } from "../utils/api_response.js";
@@ -8,10 +9,13 @@ import { supabase } from "../utils/supabase.js";
 
 const generateRefAccToken = async (id) => {
   try {
-    const user = await User.findById({ id });
+    const user = await User.findById( id );
     if (!user) {
       throw new ApiError(401, "Unable to find user");
     }
+
+    const refreshToken = await user.generateRefreshToken();
+    const accessToken = await user.generateAccessToken();
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -103,7 +107,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Email and Password are required");
   }
 
-  const user = await User.findByEmail({ email });
+  const user = await User.findOne({ email });
   if (!user) {
     throw new ApiError(400, "Unable to find the user");
   }
@@ -176,13 +180,13 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const renewAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken = req.cookie?.refreshToken;
+  const incomingRefreshToken = req.cookies?.refreshToken;
   if (!incomingRefreshToken) {
     throw new ApiError(400, "UnAuthorized access");
   }
 
   try {
-    const decodedToken = await jwt.verify(incomingRefreshToken, process.env.RT_SECRET);
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.RT_SECRET);
     const user = await User.findById(decodedToken._id);
     if (!user) {
       throw new ApiError(401, "Invalid refresh Token");
@@ -198,9 +202,6 @@ const renewAccessToken = asyncHandler(async (req, res) => {
       secure: true,
       sameSite: "strict"
     }
-
-    user.refreshToken = newRefreshToken;
-    await user.save({ validateBeforeSave: false });
 
     return res
       .status(200)
