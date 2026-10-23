@@ -299,7 +299,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-    userData,
+    { $set: userData },
     { new: true }
   ).select(
     "-password -refreshToken"
