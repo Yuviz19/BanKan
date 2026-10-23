@@ -5,7 +5,7 @@ import { ApiError } from "../utils/api_error.js";
 import { ApiResponse } from "../utils/api_response.js";
 import mongoose from "mongoose";
 
-const createOrganisation = asyncHandler(async (req, res) => {
+const createOrganization = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
   const user = req.user;
 
@@ -38,13 +38,13 @@ const createOrganisation = asyncHandler(async (req, res) => {
       .json(new ApiResponse(
         201,
         { org },
-        "Organisation is created successfully created"
+        "Organization is created successfully created"
       ));
   } catch (error) {
     await session.abortTransaction();
     throw new ApiError(
       400,
-      "Unable to create the Organisation",
+      "Unable to create the Organization",
       { error }
     );
   } finally {
@@ -52,7 +52,7 @@ const createOrganisation = asyncHandler(async (req, res) => {
   }
 });
 
-const getUserOrganisation = asyncHandler(async (req, res) => {
+const getUserOrganization = asyncHandler(async (req, res) => {
   const user = req.user;
   const orgs = await Membership.aggregate(
     [
@@ -63,8 +63,8 @@ const getUserOrganisation = asyncHandler(async (req, res) => {
       },
       {
         $lookup: {
-          from: "organisations",
-          localField: "organisationId",
+          from: "organizations",
+          localField: "organizationId",
           foreignField: "_id",
           as: "orgDetails"
         }
@@ -84,12 +84,12 @@ const getUserOrganisation = asyncHandler(async (req, res) => {
     .json(new ApiResponse(
       200,
       { orgs },
-      "Successfully fetched organisation related to user"
+      "Successfully fetched organization related to user"
     ));
 });
 
-const getOrganisation = asyncHandler(async (req, res) => {
-  const orgId = req.params;
+const getOrganization = asyncHandler(async (req, res) => {
+  const organizationId = req.params;
   const user = req.user;
 
   const membership = await Membership.findOne({
@@ -101,10 +101,10 @@ const getOrganisation = asyncHandler(async (req, res) => {
     throw new ApiError(400, "You're not a part of this organisation");
   }
 
-  const org = await Organization.findById(orgId);
+  const org = await Organization.findById(organizationId);
 
   if (!org) {
-    throw new ApiError(400, "Unable to fetch the organisation");
+    throw new ApiError(400, "Unable to fetch the organization");
   }
 
   return res
@@ -112,18 +112,18 @@ const getOrganisation = asyncHandler(async (req, res) => {
     .json(new ApiResponse(
       200,
       { org },
-      "Organisation details fetched successfully"
+      "Organization details fetched successfully"
     ));
 });
 
-const updateOrganisation = asyncHandler(async (req, res) => {
+const updateOrganization = asyncHandler(async (req, res) => {
   const user = req.user;
-  const orgId = req.params;
+  const organisationIdId = req.params;
   const { title, description } = req.body;
 
   const membership = await Membership.findOne({
     userId: user._id,
-    organisationId: orgId
+    organizationId
   });
 
   if (!membership) {
@@ -150,7 +150,7 @@ const updateOrganisation = asyncHandler(async (req, res) => {
   );
 
   if (!updatedOrg) {
-    throw new ApiError(400, "Unable to update the organisation")
+    throw new ApiError(400, "Unable to update the organization")
   }
 
   return res
@@ -158,26 +158,26 @@ const updateOrganisation = asyncHandler(async (req, res) => {
     .json(new ApiResponse(
       200,
       { updatedOrg },
-      "Organisation updated successfully"
+      "Organization updated successfully"
     ));
 });
 
-const deleteOrganisation = asyncHandler(async (req, res) => {
+const deleteOrganization = asyncHandler(async (req, res) => {
   const user = req.user;
-  const orgId = req.params;
+  const organisationIdId = req.params;
 
   const membership = await Membership.findOne({
     ownerId: user._id,
-    organisationId: orgId
+    organizationId
   });
 
   if (!membership) {
-    throw new ApiError(400, "You're not a part of the Organisation");
+    throw new ApiError(400, "You're not a part of the Organization");
   }
 
   const deletedOrg = await Organization.findByIdAndDelete(orgId);
   if (!deletedOrg) {
-    throw new ApiError(400, "Unable to delete the organisation");
+    throw new ApiError(400, "Unable to delete the organization");
   }
 
   return res
@@ -185,14 +185,14 @@ const deleteOrganisation = asyncHandler(async (req, res) => {
     .json(new ApiResponse(
       200,
       { deletedOrg },
-      "Successfully deleted the organisation"
+      "Successfully deleted the organization"
     ));
 });
 
 export {
-  createOrganisation,
-  getUserOrganisation,
-  getOrganisation,
-  updateOrganisation,
-  deleteOrganisation
+  createOrganization,
+  getUserOrganization,
+  getOrganization,
+  updateOrganization,
+  deleteOrganization
 }
