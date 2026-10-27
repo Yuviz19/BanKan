@@ -19,12 +19,6 @@ const invitationSchema = new Schema(
       enum: ["ADMIN", "MEMBER"],
       default: "MEMBER",
     },
-    token: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true
-    },
     expiresAt: {
       type: Date,
       required: true
@@ -35,7 +29,7 @@ const invitationSchema = new Schema(
       enum: ["PENDING", "ACCEPTED", "EXPIRED", "CANCELLED"],
       default: "PENDING"
     },
-    invitedAt: {
+    invitedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true
