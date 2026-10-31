@@ -108,11 +108,6 @@ const listOrgInvitations = asyncHandler(async (req, res) => {
 
 const listUsersInvitations = asyncHandler(async (req, res) => {
   const user = req.user;
-
-  if (membership) {
-    throw new ApiError(400, "User already part of an existing organization");
-  }
-
   const invitations = await Invitation.find({
     email: user.email
   });
