@@ -118,7 +118,7 @@ const getOrganization = asyncHandler(async (req, res) => {
 
 const updateOrganization = asyncHandler(async (req, res) => {
   const user = req.user;
-  const organisationIdId = req.params;
+  const organizationId = req.params;
   const { title, description } = req.body;
 
   const membership = await Membership.findOne({
@@ -144,7 +144,7 @@ const updateOrganization = asyncHandler(async (req, res) => {
   }
 
   const updatedOrg = await Organization.findByIdAndUpdate(
-    orgId,
+    organizationId,
     { $set: updatedData },
     { new: true }
   );

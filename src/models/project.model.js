@@ -4,7 +4,8 @@ const columnSchema = new Schema(
   {
     name: {
       type: String,
-      required: true
+      required: true,
+      trim: true
     },
     position: {
       type: Number,
@@ -40,7 +41,7 @@ const projectSchema = new Schema(
       ]
     },
     createdBy: {
-      type: Schema.Type.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true
     }
