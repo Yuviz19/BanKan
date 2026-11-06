@@ -19,6 +19,15 @@ const createProject = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Unable to find the organization")
   }
 
+  const membership = await Membership.findOne({
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+    userId: req.user._id
+  });
+
+  if (!membership) {
+    throw new ApiError(400, "You're not a part of this project")
+  }
+
   const project = await Project.create({
     oragnizationId: new mongoose.Types.ObjectId(organizationId),
     name,
@@ -41,6 +50,15 @@ const createProject = asyncHandler(async (req, res) => {
 
 const listOrgProject = asyncHandler(async (req, res) => {
   const { organizationId } = req.params;
+
+  const membership = await Membership.findOne({
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+    userId: req.user._id
+  });
+
+  if (!membership) {
+    throw new ApiError(400, "You're not a part of this project")
+  }
 
   const projects = await Project.find({
     organization: new mongoose.Types.ObjectId(organizationId)

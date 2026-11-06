@@ -62,12 +62,14 @@ import userRouter from "./routes/user.route.js";
 import orgRouter from "./routes/organisation.route.js";
 import membershipRouter from "./routes/membership.route.js"
 import invitationRouter from "./routes/invitation.route.js"
+import projectRouter from "./routes/project.route.js";
 
 app.use("/api/v1/healthCheck", heathCheckRoute);
 app.use("/api/v1/auth", userRouter);
 app.use("/api/v1/organisation", orgRouter);
 app.use("/api/v1/membership", membershipRouter);
 app.use("/api/v1/invitations", invitationRouter);
+app.use("/api/v1/projects", projectRouter);
 
 // error handling middleware
 app.use(errorHandler);
