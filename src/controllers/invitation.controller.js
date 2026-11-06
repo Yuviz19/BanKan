@@ -206,7 +206,7 @@ const cancelInvitation = asyncHandler(async (req, res) => {
   }
 
   invitation.status = "CANCELLED";
-  invitation.save();
+  await invitation.save();
 
   return res
     .status(200)

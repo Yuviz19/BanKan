@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { Membership } from "../models/memebership.model.js";
 import { Project } from "../models/project.model.js";
 import { Organization } from "../models/organisation.model.js";
+import { Card } from "../models/card.model.js";
 
 const createProject = asyncHandler(async (req, res) => {
   const { organizationId } = req.params;
@@ -38,7 +39,7 @@ const createProject = asyncHandler(async (req, res) => {
     ));
 });
 
-const lisOrgProject = asyncHandler(async (req, res) => {
+const listOrgProject = asyncHandler(async (req, res) => {
   const { organizationId } = req.params;
 
   const projects = await Project.find({
@@ -69,6 +70,15 @@ const getProject = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Unable to fetch the Project")
   }
 
+  const membership = await Membership.findOne({
+    organizationId: project.organization,
+    userId: req.user._id
+  });
+
+  if (!membership) {
+    throw new ApiError(404, "User does not belong to Organization");
+  }
+
   return res
     .status(200)
     .json(new ApiResponse(
@@ -83,11 +93,11 @@ const updateProject = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
 
   let updatedData = {};
-  if (name) {
+  if (name !== undefined) {
     updatedData.name = name;
   }
 
-  if (description) {
+  if (description !== undefined) {
     updatedData.description = description;
   }
 
@@ -95,7 +105,7 @@ const updateProject = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Nothing to update");
   }
 
-  const project = Project.findByIdAndDelete(
+  const project = await Project.findByIdAndUpdate(
     projectId,
     { $set: updatedData },
     { new: true }
@@ -118,9 +128,12 @@ const deleteProject = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
 
   const project = await Project.findByIdAndDelete(projectId);
+  const cards = await Card.deleteMany({
+    projectId
+  });
 
-  if (!project) {
-    throw new ApiError(400, "Unable to update the project");
+  if (!project || !cards) {
+    throw new ApiError(400, "Unable to delete the project");
   }
 
   return res
@@ -131,3 +144,134 @@ const deleteProject = asyncHandler(async (req, res) => {
       "Project has beed deleted successfully"
     ));
 });
+
+const createColumn = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+  const { colName } = req.body;
+
+  const project = await Project.findById(projectId);
+
+  if (!project) {
+    throw new ApiError(404, "Unable to find the project");
+  }
+
+  const membership = await Membership.findOne({
+    organizationId: project.organization,
+    userId: req.user._id
+  });
+
+  if (!membership) {
+    throw new ApiError(400, "User does not belong to the project");
+  }
+
+  const colExists = project.columns.some((col) => {
+    return col.name.toLowerCase() === colName.toLowerCase();
+  })
+
+  if (colExists) {
+    throw new ApiError(400, "Column with the same already exists");
+  }
+
+  const lastCol = project.columns[project.columns.length - 1];
+  const newCol = lastCol.position + 1000;
+
+  project.columns.push({
+    name: colName,
+    position: newCol
+  });
+
+  await project.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(
+      200,
+      { project },
+      "Project column updates successfully"
+    ));
+});
+
+const updateColumn = asyncHandler(async (req, res) => {
+  const { projectId, columnId } = req.params;
+  const { colName, position } = req.body;
+
+  const project = await Project.findById(projectId);
+  if (!project) {
+    throw new ApiError(404, "Could not find a project");
+  }
+
+  const membership = await Membership.findOne({
+    organizationId: project.organization,
+    userId: req.user._id
+  });
+
+  if (!membership) {
+    throw new ApiError(400, "You're not a part of the organization");
+  }
+
+  const column = project.columns.id(columnId);
+  if (!columnId){
+    throw new ApiError(404, "Column not found");
+  }
+
+  if (colName !== undefined){
+    column.name = colName;
+  }
+
+  if (position !== undefined){
+    column.position = position;
+  }
+
+  await project.save();
+
+  return res
+  .status(200)
+  .json(new ApiResponse(
+      200,
+      { project },
+      "Column updated successfully"
+    ));
+});
+
+const deleteColumn = asyncHandler(async (req, res) => {
+  const { projectId, columnId } = req.params;
+
+  const project = await Project.findById(projectId);
+  if (!project) {
+    throw new ApiError(404, "Unable to fetch project");
+  }
+
+  const membership = await Membership.findOne({
+    organizationId: project.organization,
+    userId: req.user._id
+  });
+
+  if (!membership) {
+    throw new ApiError(400, "You're not the part of the organization");
+  }
+
+  project.columns = project.columns.filter((col) => {
+    col._id.toString() !== columnId;
+  });
+
+  await project.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(
+      200,
+      { project },
+      "Column deleted successsfully"
+    ));
+});
+
+export {
+  createProject,
+  listOrgProject,
+  getProject,
+  updateProject,
+  deleteProject,
+  createColumn,
+  updateColumn,
+  deleteColumn
+};
