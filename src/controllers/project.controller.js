@@ -228,7 +228,7 @@ const updateColumn = asyncHandler(async (req, res) => {
   }
 
   const column = project.columns.id(columnId);
-  if (!columnId){
+  if (!column){
     throw new ApiError(404, "Column not found");
   }
 

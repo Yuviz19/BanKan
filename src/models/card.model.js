@@ -14,6 +14,7 @@ const cardSchema = new Schema(
     },
     columnId: {
       type: Schema.Types.ObjectId,
+      ref: "Column",
       required: true,
       index: true
     },
@@ -44,6 +45,7 @@ const cardSchema = new Schema(
     assignedTo: {
       type: Schema.Types.ObjectId,
       ref: "User",
+      default: null
     }
   },
   { timestamps: true }
